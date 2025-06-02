@@ -1,0 +1,1676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Dashboard - Data Entry & Export</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 0;
+        }
+
+        .tab-container {
+            background: white;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: #4285f4;
+            color: white;
+        }
+
+        .tab:hover:not(.active) {
+            background: #e9ecef;
+            color: #333;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+            background: white;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .form-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #4285f4;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4285f4;
+            box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: #4285f4;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #3367d6;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #34a853;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #137333;
+        }
+
+        .btn-danger {
+            background: #ea4335;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #d33b2c;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .data-list {
+            background: white;
+            border-radius: 8px;
+            margin-top: 20px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .data-list table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-list th {
+            background: #4285f4;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        .data-list td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-list tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .data-list tr:hover {
+            background: #e3f2fd;
+        }
+
+        .status-open { color: #ea4335; font-weight: bold; }
+        .status-closed { color: #34a853; font-weight: bold; }
+        .priority-high { color: #ea4335; font-weight: bold; }
+        .priority-medium { color: #fbbc04; font-weight: bold; }
+        .priority-low { color: #34a853; font-weight: bold; }
+
+        .export-section {
+            background: #e8f0fe;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .export-section h3 {
+            color: #1a73e8;
+            margin-bottom: 15px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-info {
+            background: #cce7ff;
+            border: 1px solid #99d6ff;
+            color: #004085;
+        }
+
+        .score-input {
+            display: grid;
+            grid-template-columns: 1fr 100px 100px 80px 80px;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .score-input label {
+            font-weight: bold;
+        }
+
+        .delete-btn {
+            background: #ea4335;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .delete-btn:hover {
+            background: #d33b2c;
+        }
+
+        #reportContent {
+            display: none;
+        }
+
+        .dashboard-export {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            margin-top: 20px;
+        }
+
+        .dashboard-export .header-export {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin: -30px -30px 20px -30px;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #4285f4;
+        }
+
+        .summary-card h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .summary-card .number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #4285f4;
+        }
+
+        .export-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .export-table th {
+            background: #5a9fd4;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        .export-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .export-table tr:nth-child(even) {
+            background: #fafafa;
+        }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .tab-container, .tabs, .tab { display: none; }
+            #reportContent { display: block !important; }
+            .btn, .export-section { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Security Dashboard Data Entry & Export Tool</h1>
+        </div>
+
+        <div class="tab-container">
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('setup')">📅 Setup</button>
+                <button class="tab" onclick="showTab('poams')">📋 POAMs</button>
+                <button class="tab" onclick="showTab('sias')">🔍 SIAs</button>
+                <button class="tab" onclick="showTab('kevs')">⚠️ KEVs</button>
+                <button class="tab" onclick="showTab('scores')">📊 Scores</button>
+                <button class="tab" onclick="showTab('charts')">📈 Charts</button>
+                <button class="tab" onclick="showTab('export')">📤 Export</button>
+            </div>
+
+            <!-- Setup Tab -->
+            <div id="setup" class="tab-content active">
+                <div class="form-section">
+                    <h3>📅 Report Configuration</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reportMonth">Month:</label>
+                            <select id="reportMonth">
+                                <option value="January">January</option>
+                                <option value="February">February</option>
+                                <option value="March" selected>March</option>
+                                <option value="April">April</option>
+                                <option value="May">May</option>
+                                <option value="June">June</option>
+                                <option value="July">July</option>
+                                <option value="August">August</option>
+                                <option value="September">September</option>
+                                <option value="October">October</option>
+                                <option value="November">November</option>
+                                <option value="December">December</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="reportYear">Year:</label>
+                            <select id="reportYear">
+                                <option value="2024">2024</option>
+                                <option value="2025" selected>2025</option>
+                                <option value="2026">2026</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="organizationName">Organization:</label>
+                            <input type="text" id="organizationName" placeholder="Enter organization name" value="Your Organization">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>Instructions:</strong> Use the tabs above to add your POAMs, SIAs, KEVs, and security scores. Then go to the Export tab to generate your professional report.
+                </div>
+            </div>
+
+            <!-- POAMs Tab -->
+            <div id="poams" class="tab-content">
+                <div class="form-section">
+                    <h3>➕ Add New POAM</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="poamId">POAM ID:</label>
+                            <input type="text" id="poamId" placeholder="e.g., POAM 38062094">
+                        </div>
+                        <div class="form-group">
+                            <label for="poamPriority">Priority:</label>
+                            <select id="poamPriority">
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="poamStatus">Status:</label>
+                            <select id="poamStatus">
+                                <option value="Open">Open</option>
+                                <option value="Closed">Closed</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="poamDeadline">Deadline:</label>
+                            <input type="date" id="poamDeadline">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="poamDescription">Description:</label>
+                            <textarea id="poamDescription" placeholder="Describe the POAM..."></textarea>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="addPOAM()">Add POAM</button>
+                </div>
+
+                <div class="data-list" id="poamsList">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>POAM ID</th>
+                                <th>Description</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Deadline</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="poamsTableBody">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: #666;">No POAMs added yet</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SIAs Tab -->
+            <div id="sias" class="tab-content">
+                <div class="form-section">
+                    <h3>➕ Add New SIA</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="siaId">Change ID:</label>
+                            <input type="text" id="siaId" placeholder="e.g., SIA-001">
+                        </div>
+                        <div class="form-group">
+                            <label for="siaStatus">Status:</label>
+                            <select id="siaStatus">
+                                <option value="Open">Open</option>
+                                <option value="Closed">Closed</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="siaDate">Date:</label>
+                            <input type="date" id="siaDate">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="siaDescription">Description:</label>
+                            <textarea id="siaDescription" placeholder="Describe the security impact analysis..."></textarea>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="addSIA()">Add SIA</button>
+                </div>
+
+                <div class="data-list" id="siasList">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Change ID</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="siasTableBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #666;">No SIAs added yet</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- KEVs Tab -->
+            <div id="kevs" class="tab-content">
+                <div class="form-section">
+                    <h3>➕ Add New KEV</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="kevId">Vulnerability ID:</label>
+                            <input type="text" id="kevId" placeholder="e.g., CVE-2024-1234">
+                        </div>
+                        <div class="form-group">
+                            <label for="kevSeverity">Severity:</label>
+                            <select id="kevSeverity">
+                                <option value="Critical">Critical</option>
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="kevStatus">Status:</label>
+                            <select id="kevStatus">
+                                <option value="Open">Open</option>
+                                <option value="Closed">Closed</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="kevHost">Host:</label>
+                            <input type="text" id="kevHost" placeholder="e.g., server01.example.com">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="addKEV()">Add KEV</button>
+                </div>
+
+                <div class="data-list" id="kevsList">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Vulnerability ID</th>
+                                <th>Severity</th>
+                                <th>Status</th>
+                                <th>Host</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="kevsTableBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #666;">No KEVs added yet</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Security Scores Tab -->
+            <div id="scores" class="tab-content">
+                <div class="form-section">
+                    <h3>➕ Add Environment Security Scores</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="envName">Environment Name:</label>
+                            <input type="text" id="envName" placeholder="e.g., CEDAR-PROD">
+                        </div>
+                        <div class="form-group">
+                            <label for="cisScore">CIS Score (%):</label>
+                            <input type="number" id="cisScore" min="0" max="100" placeholder="94">
+                        </div>
+                        <div class="form-group">
+                            <label for="awsScore">AWS Best Practices (%):</label>
+                            <input type="number" id="awsScore" min="0" max="100" placeholder="87">
+                        </div>
+                        <div class="form-group">
+                            <label for="controlsPassed">Controls Passed:</label>
+                            <input type="number" id="controlsPassed" min="0" placeholder="15">
+                        </div>
+                        <div class="form-group">
+                            <label for="controlsFailed">Controls Failed:</label>
+                            <input type="number" id="controlsFailed" min="0" placeholder="12">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="addSecurityScore()">Add Security Score</button>
+                </div>
+
+                <div class="data-list" id="scoresList">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Environment</th>
+                                <th>CIS Score</th>
+                                <th>AWS Best Practices</th>
+                                <th>Controls Passed</th>
+                                <th>Controls Failed</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scoresTableBody">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: #666;">No security scores added yet</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Charts Tab -->
+            <div id="charts" class="tab-content">
+                <div class="alert alert-info">
+                    <strong>📈 Live Charts:</strong> These charts automatically update as you add data in the other tabs.
+                </div>
+
+                <div class="charts-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+                    <div class="chart-section">
+                        <h3>POAM Status Overview</h3>
+                        <div class="chart-container">
+                            <canvas id="poamStatusChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-section">
+                        <h3>POAM Priority Breakdown</h3>
+                        <div class="chart-container">
+                            <canvas id="poamPriorityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+                    <div class="chart-section">
+                        <h3>KEV Severity Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="kevSeverityChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-section">
+                        <h3>Security Scores Comparison</h3>
+                        <div class="chart-container">
+                            <canvas id="securityScoresChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-container" style="display: grid; grid-template-columns: 1fr; gap: 30px; margin-bottom: 30px;">
+                    <div class="chart-section">
+                        <h3>Overall Security Status Dashboard</h3>
+                        <div class="chart-container">
+                            <canvas id="overallStatusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                    <div class="chart-section">
+                        <h3>Controls Analysis</h3>
+                        <div class="chart-container">
+                            <canvas id="controlsChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-section">
+                        <h3>Security Trends</h3>
+                        <div class="chart-container">
+                            <canvas id="trendsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section" style="margin-top: 30px;">
+                    <h3>🎨 Chart Actions</h3>
+                    <button class="btn btn-primary" onclick="refreshAllCharts()">🔄 Refresh All Charts</button>
+                    <button class="btn btn-success" onclick="downloadChartsAsPDF()">📄 Download All Charts as PDF</button>
+                    <button class="btn btn-secondary" onclick="downloadChartImages()">💾 Save Individual Chart Images</button>
+                    <button class="btn btn-secondary" onclick="printCharts()">🖨️ Print Charts</button>
+                </div>
+            </div>
+
+            <!-- Export Tab -->
+            <div id="export" class="tab-content">
+                <div class="export-section">
+                    <h3>📤 Export Your Security Dashboard</h3>
+                    <p>Generate a professional-looking report based on your entered data.</p>
+                    <button class="btn btn-success" onclick="generateReport()">Generate Report</button>
+                    <button class="btn btn-secondary" onclick="printReport()">Print/Save as PDF</button>
+                    <button class="btn btn-primary" onclick="downloadHTML()">Download HTML</button>
+                </div>
+
+                <div id="reportPreview" style="margin-top: 20px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Report Content for Export -->
+    <div id="reportContent"></div>
+
+    <script>
+        // Global data storage
+        let dashboardData = {
+            poams: [],
+            sias: [],
+            kevs: [],
+            securityScores: []
+        };
+
+        // Chart instances
+        let charts = {
+            poamStatus: null,
+            poamPriority: null,
+            kevSeverity: null,
+            securityScores: null,
+            overallStatus: null,
+            controls: null,
+            trends: null
+        };
+
+        // Tab functionality
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content and mark tab as active
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // POAM functions
+        function addPOAM() {
+            const poam = {
+                id: document.getElementById('poamId').value,
+                description: document.getElementById('poamDescription').value,
+                priority: document.getElementById('poamPriority').value,
+                status: document.getElementById('poamStatus').value,
+                deadline: document.getElementById('poamDeadline').value
+            };
+
+            if (!poam.id || !poam.description) {
+                alert('Please fill in POAM ID and Description');
+                return;
+            }
+
+            dashboardData.poams.push(poam);
+            updatePOAMsTable();
+            clearPOAMForm();
+            showAlert('POAM added successfully!', 'success');
+            updateCharts();
+        }
+
+        function deletePOAM(index) {
+            if (confirm('Are you sure you want to delete this POAM?')) {
+                dashboardData.poams.splice(index, 1);
+                updatePOAMsTable();
+                updateCharts();
+            }
+        }
+
+        function updatePOAMsTable() {
+            const tbody = document.getElementById('poamsTableBody');
+            tbody.innerHTML = '';
+
+            if (dashboardData.poams.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666;">No POAMs added yet</td></tr>';
+                return;
+            }
+
+            dashboardData.poams.forEach((poam, index) => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${poam.id}</td>
+                    <td>${poam.description}</td>
+                    <td><span class="priority-${poam.priority.toLowerCase()}">${poam.priority}</span></td>
+                    <td><span class="status-${poam.status.toLowerCase()}">${poam.status}</span></td>
+                    <td>${poam.deadline ? new Date(poam.deadline).toLocaleDateString() : 'N/A'}</td>
+                    <td><button class="delete-btn" onclick="deletePOAM(${index})">Delete</button></td>
+                `;
+            });
+        }
+
+        function clearPOAMForm() {
+            document.getElementById('poamId').value = '';
+            document.getElementById('poamDescription').value = '';
+            document.getElementById('poamDeadline').value = '';
+        }
+
+        // SIA functions
+        function addSIA() {
+            const sia = {
+                id: document.getElementById('siaId').value,
+                description: document.getElementById('siaDescription').value,
+                status: document.getElementById('siaStatus').value,
+                date: document.getElementById('siaDate').value
+            };
+
+            if (!sia.id || !sia.description) {
+                alert('Please fill in Change ID and Description');
+                return;
+            }
+
+            dashboardData.sias.push(sia);
+            updateSIAsTable();
+            clearSIAForm();
+            showAlert('SIA added successfully!', 'success');
+            updateCharts();
+        }
+
+        function deleteSIA(index) {
+            if (confirm('Are you sure you want to delete this SIA?')) {
+                dashboardData.sias.splice(index, 1);
+                updateSIAsTable();
+            }
+        }
+
+        function updateSIAsTable() {
+            const tbody = document.getElementById('siasTableBody');
+            tbody.innerHTML = '';
+
+            if (dashboardData.sias.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666;">No SIAs added yet</td></tr>';
+                return;
+            }
+
+            dashboardData.sias.forEach((sia, index) => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${sia.id}</td>
+                    <td>${sia.description}</td>
+                    <td><span class="status-${sia.status.toLowerCase()}">${sia.status}</span></td>
+                    <td>${sia.date ? new Date(sia.date).toLocaleDateString() : 'N/A'}</td>
+                    <td><button class="delete-btn" onclick="deleteSIA(${index})">Delete</button></td>
+                `;
+            });
+        }
+
+        function clearSIAForm() {
+            document.getElementById('siaId').value = '';
+            document.getElementById('siaDescription').value = '';
+            document.getElementById('siaDate').value = '';
+        }
+
+        // KEV functions
+        function addKEV() {
+            const kev = {
+                id: document.getElementById('kevId').value,
+                severity: document.getElementById('kevSeverity').value,
+                status: document.getElementById('kevStatus').value,
+                host: document.getElementById('kevHost').value
+            };
+
+            if (!kev.id || !kev.host) {
+                alert('Please fill in Vulnerability ID and Host');
+                return;
+            }
+
+            dashboardData.kevs.push(kev);
+            updateKEVsTable();
+            clearKEVForm();
+            showAlert('KEV added successfully!', 'success');
+            updateCharts();
+        }
+
+        function deleteKEV(index) {
+            if (confirm('Are you sure you want to delete this KEV?')) {
+                dashboardData.kevs.splice(index, 1);
+                updateKEVsTable();
+            }
+        }
+
+        function updateKEVsTable() {
+            const tbody = document.getElementById('kevsTableBody');
+            tbody.innerHTML = '';
+
+            if (dashboardData.kevs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666;">No KEVs added yet</td></tr>';
+                return;
+            }
+
+            dashboardData.kevs.forEach((kev, index) => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${kev.id}</td>
+                    <td><span class="priority-${kev.severity.toLowerCase()}">${kev.severity}</span></td>
+                    <td><span class="status-${kev.status.toLowerCase()}">${kev.status}</span></td>
+                    <td>${kev.host}</td>
+                    <td><button class="delete-btn" onclick="deleteKEV(${index})">Delete</button></td>
+                `;
+            });
+        }
+
+        function clearKEVForm() {
+            document.getElementById('kevId').value = '';
+            document.getElementById('kevHost').value = '';
+        }
+
+        // Security Score functions
+        function addSecurityScore() {
+            const score = {
+                environment: document.getElementById('envName').value,
+                cisScore: parseInt(document.getElementById('cisScore').value) || 0,
+                awsScore: parseInt(document.getElementById('awsScore').value) || 0,
+                controlsPassed: parseInt(document.getElementById('controlsPassed').value) || 0,
+                controlsFailed: parseInt(document.getElementById('controlsFailed').value) || 0
+            };
+
+            if (!score.environment) {
+                alert('Please enter environment name');
+                return;
+            }
+
+            dashboardData.securityScores.push(score);
+            updateSecurityScoresTable();
+            clearSecurityScoreForm();
+            showAlert('Security score added successfully!', 'success');
+            updateCharts();
+        }
+
+        function deleteSecurityScore(index) {
+            if (confirm('Are you sure you want to delete this security score?')) {
+                dashboardData.securityScores.splice(index, 1);
+                updateSecurityScoresTable();
+            }
+        }
+
+        function updateSecurityScoresTable() {
+            const tbody = document.getElementById('scoresTableBody');
+            tbody.innerHTML = '';
+
+            if (dashboardData.securityScores.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666;">No security scores added yet</td></tr>';
+                return;
+            }
+
+            dashboardData.securityScores.forEach((score, index) => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${score.environment}</td>
+                    <td>${score.cisScore}%</td>
+                    <td>${score.awsScore}%</td>
+                    <td>${score.controlsPassed}</td>
+                    <td>${score.controlsFailed}</td>
+                    <td><button class="delete-btn" onclick="deleteSecurityScore(${index})">Delete</button></td>
+                `;
+            });
+        }
+
+        function clearSecurityScoreForm() {
+            document.getElementById('envName').value = '';
+            document.getElementById('cisScore').value = '';
+            document.getElementById('awsScore').value = '';
+            document.getElementById('controlsPassed').value = '';
+            document.getElementById('controlsFailed').value = '';
+        }
+
+        // Utility functions
+        function showAlert(message, type) {
+            // You can implement a toast notification system here
+            alert(message);
+        }
+
+        // Export functions
+        function generateReport() {
+            const month = document.getElementById('reportMonth').value;
+            const year = document.getElementById('reportYear').value;
+            const organization = document.getElementById('organizationName').value;
+
+            const reportHTML = `
+                <div class="dashboard-export">
+                    <div class="header-export">
+                        <h1>Security Readiness Dashboard</h1>
+                        <p>${organization} - ${month} ${year}</p>
+                    </div>
+
+                    <div class="summary-cards">
+                        <div class="summary-card">
+                            <h4>Total SIAs</h4>
+                            <div class="number">${dashboardData.sias.length}</div>
+                        </div>
+                        <div class="summary-card">
+                            <h4>Open POAMs</h4>
+                            <div class="number">${dashboardData.poams.filter(p => p.status === 'Open').length}</div>
+                        </div>
+                        <div class="summary-card">
+                            <h4>Open KEVs</h4>
+                            <div class="number">${dashboardData.kevs.filter(k => k.status === 'Open').length}</div>
+                        </div>
+                        <div class="summary-card">
+                            <h4>Environments</h4>
+                            <div class="number">${dashboardData.securityScores.length}</div>
+                        </div>
+                    </div>
+
+                    ${generateSIASection()}
+                    ${generatePOAMSection()}
+                    ${generateKEVSection()}
+                    ${generateSecurityScoreSection()}
+                </div>
+            `;
+
+            document.getElementById('reportPreview').innerHTML = reportHTML;
+            document.getElementById('reportContent').innerHTML = reportHTML;
+        }
+
+        function generateSIASection() {
+            if (dashboardData.sias.length === 0) return '';
+            
+            return `
+                <h3 style="color: #4285f4; border-bottom: 2px solid #4285f4; padding-bottom: 8px;">SIA (Security Impact Analysis)</h3>
+                <table class="export-table">
+                    <thead>
+                        <tr>
+                            <th>Change ID</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${dashboardData.sias.map(sia => `
+                            <tr>
+                                <td>${sia.id}</td>
+                                <td>${sia.description}</td>
+                                <td><span class="status-${sia.status.toLowerCase()}">${sia.status}</span></td>
+                                <td>${sia.date ? new Date(sia.date).toLocaleDateString() : 'N/A'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function generatePOAMSection() {
+            if (dashboardData.poams.length === 0) return '';
+            
+            return `
+                <h3 style="color: #4285f4; border-bottom: 2px solid #4285f4; padding-bottom: 8px;">POAMs (Plan of Action and Milestones)</h3>
+                <table class="export-table">
+                    <thead>
+                        <tr>
+                            <th>POAM ID</th>
+                            <th>Description</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Deadline</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${dashboardData.poams.map(poam => `
+                            <tr>
+                                <td>${poam.id}</td>
+                                <td>${poam.description}</td>
+                                <td><span class="priority-${poam.priority.toLowerCase()}">${poam.priority}</span></td>
+                                <td><span class="status-${poam.status.toLowerCase()}">${poam.status}</span></td>
+                                <td>${poam.deadline ? new Date(poam.deadline).toLocaleDateString() : 'N/A'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function generateKEVSection() {
+            if (dashboardData.kevs.length === 0) return '';
+            
+            return `
+                <h3 style="color: #4285f4; border-bottom: 2px solid #4285f4; padding-bottom: 8px;">KEVs (Known Exploited Vulnerabilities)</h3>
+                <table class="export-table">
+                    <thead>
+                        <tr>
+                            <th>Vulnerability ID</th>
+                            <th>Severity</th>
+                            <th>Status</th>
+                            <th>Host</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${dashboardData.kevs.map(kev => `
+                            <tr>
+                                <td>${kev.id}</td>
+                                <td><span class="priority-${kev.severity.toLowerCase()}">${kev.severity}</span></td>
+                                <td><span class="status-${kev.status.toLowerCase()}">${kev.status}</span></td>
+                                <td>${kev.host}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function generateSecurityScoreSection() {
+            if (dashboardData.securityScores.length === 0) return '';
+            
+            return `
+                <h3 style="color: #4285f4; border-bottom: 2px solid #4285f4; padding-bottom: 8px;">CONMON (Continuous Monitoring) - Security Scores</h3>
+                <table class="export-table">
+                    <thead>
+                        <tr>
+                            <th>Environment</th>
+                            <th>CIS Score</th>
+                            <th>AWS Best Practices</th>
+                            <th>Controls Passed</th>
+                            <th>Controls Failed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${dashboardData.securityScores.map(score => `
+                            <tr>
+                                <td>${score.environment}</td>
+                                <td>${score.cisScore}%</td>
+                                <td>${score.awsScore}%</td>
+                                <td>${score.controlsPassed}</td>
+                                <td>${score.controlsFailed}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function printReport() {
+            if (!document.getElementById('reportContent').innerHTML) {
+                alert('Please generate the report first!');
+                return;
+            }
+            window.print();
+        }
+
+        function downloadHTML() {
+            if (!document.getElementById('reportContent').innerHTML) {
+                alert('Please generate the report first!');
+                return;
+            }
+            
+            const month = document.getElementById('reportMonth').value;
+            const year = document.getElementById('reportYear').value;
+            const fullHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Security Dashboard - ${month} ${year}</title>
+    <style>
+        ${document.querySelector('style').innerHTML}
+    </style>
+</head>
+<body>
+    ${document.getElementById('reportContent').innerHTML}
+</body>
+</html>
+            `;
+            
+            const blob = new Blob([fullHTML], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Security_Dashboard_${month}_${year}.html`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Chart Functions
+        function initializeCharts() {
+            // Initialize all charts when page loads
+            createPOAMStatusChart();
+            createPOAMPriorityChart();
+            createKEVSeverityChart();
+            createSecurityScoresChart();
+            createOverallStatusChart();
+            createControlsChart();
+            createTrendsChart();
+        }
+
+        function createPOAMStatusChart() {
+            const ctx = document.getElementById('poamStatusChart').getContext('2d');
+            charts.poamStatus = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Open', 'Closed'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: [
+                            'rgba(234, 67, 53, 0.8)',
+                            'rgba(52, 168, 83, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(234, 67, 53, 1)',
+                            'rgba(52, 168, 83, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function createPOAMPriorityChart() {
+            const ctx = document.getElementById('poamPriorityChart').getContext('2d');
+            charts.poamPriority = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['High', 'Medium', 'Low'],
+                    datasets: [{
+                        label: 'Count',
+                        data: [0, 0, 0],
+                        backgroundColor: [
+                            'rgba(234, 67, 53, 0.8)',
+                            'rgba(251, 188, 4, 0.8)',
+                            'rgba(52, 168, 83, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(234, 67, 53, 1)',
+                            'rgba(251, 188, 4, 1)',
+                            'rgba(52, 168, 83, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            stepSize: 1
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function createKEVSeverityChart() {
+            const ctx = document.getElementById('kevSeverityChart').getContext('2d');
+            charts.kevSeverity = new Chart(ctx, {
+                type: 'polarArea',
+                data: {
+                    labels: ['Critical', 'High', 'Medium', 'Low'],
+                    datasets: [{
+                        data: [0, 0, 0, 0],
+                        backgroundColor: [
+                            'rgba(156, 39, 176, 0.8)',
+                            'rgba(234, 67, 53, 0.8)',
+                            'rgba(251, 188, 4, 0.8)',
+                            'rgba(52, 168, 83, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(156, 39, 176, 1)',
+                            'rgba(234, 67, 53, 1)',
+                            'rgba(251, 188, 4, 1)',
+                            'rgba(52, 168, 83, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function createSecurityScoresChart() {
+            const ctx = document.getElementById('securityScoresChart').getContext('2d');
+            charts.securityScores = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'CIS Score (%)',
+                        data: [],
+                        backgroundColor: 'rgba(52, 168, 83, 0.8)',
+                        borderColor: 'rgba(52, 168, 83, 1)',
+                        borderWidth: 2
+                    }, {
+                        label: 'AWS Best Practices (%)',
+                        data: [],
+                        backgroundColor: 'rgba(66, 133, 244, 0.8)',
+                        borderColor: 'rgba(66, 133, 244, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        function createOverallStatusChart() {
+            const ctx = document.getElementById('overallStatusChart').getContext('2d');
+            charts.overallStatus = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['POAMs', 'SIAs', 'KEVs'],
+                    datasets: [{
+                        label: 'Open',
+                        data: [0, 0, 0],
+                        backgroundColor: 'rgba(234, 67, 53, 0.8)',
+                        borderColor: 'rgba(234, 67, 53, 1)',
+                        borderWidth: 2
+                    }, {
+                        label: 'Closed',
+                        data: [0, 0, 0],
+                        backgroundColor: 'rgba(52, 168, 83, 0.8)',
+                        borderColor: 'rgba(52, 168, 83, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        function createControlsChart() {
+            const ctx = document.getElementById('controlsChart').getContext('2d');
+            charts.controls = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Controls Passed', 'Controls Failed'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: [
+                            'rgba(52, 168, 83, 0.8)',
+                            'rgba(234, 67, 53, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(52, 168, 83, 1)',
+                            'rgba(234, 67, 53, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function createTrendsChart() {
+            const ctx = document.getElementById('trendsChart').getContext('2d');
+            charts.trends = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Average Security Score',
+                        data: [],
+                        backgroundColor: 'rgba(66, 133, 244, 0.2)',
+                        borderColor: 'rgba(66, 133, 244, 1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateCharts() {
+            updatePOAMStatusChart();
+            updatePOAMPriorityChart();
+            updateKEVSeverityChart();
+            updateSecurityScoresChart();
+            updateOverallStatusChart();
+            updateControlsChart();
+            updateTrendsChart();
+        }
+
+        function updatePOAMStatusChart() {
+            if (!charts.poamStatus) return;
+            
+            const openCount = dashboardData.poams.filter(p => p.status === 'Open').length;
+            const closedCount = dashboardData.poams.filter(p => p.status === 'Closed').length;
+            
+            charts.poamStatus.data.datasets[0].data = [openCount, closedCount];
+            charts.poamStatus.update();
+        }
+
+        function updatePOAMPriorityChart() {
+            if (!charts.poamPriority) return;
+            
+            const highCount = dashboardData.poams.filter(p => p.priority === 'High').length;
+            const mediumCount = dashboardData.poams.filter(p => p.priority === 'Medium').length;
+            const lowCount = dashboardData.poams.filter(p => p.priority === 'Low').length;
+            
+            charts.poamPriority.data.datasets[0].data = [highCount, mediumCount, lowCount];
+            charts.poamPriority.update();
+        }
+
+        function updateKEVSeverityChart() {
+            if (!charts.kevSeverity) return;
+            
+            const criticalCount = dashboardData.kevs.filter(k => k.severity === 'Critical').length;
+            const highCount = dashboardData.kevs.filter(k => k.severity === 'High').length;
+            const mediumCount = dashboardData.kevs.filter(k => k.severity === 'Medium').length;
+            const lowCount = dashboardData.kevs.filter(k => k.severity === 'Low').length;
+            
+            charts.kevSeverity.data.datasets[0].data = [criticalCount, highCount, mediumCount, lowCount];
+            charts.kevSeverity.update();
+        }
+
+        function updateSecurityScoresChart() {
+            if (!charts.securityScores) return;
+            
+            const environments = dashboardData.securityScores.map(s => s.environment);
+            const cisScores = dashboardData.securityScores.map(s => s.cisScore);
+            const awsScores = dashboardData.securityScores.map(s => s.awsScore);
+            
+            charts.securityScores.data.labels = environments;
+            charts.securityScores.data.datasets[0].data = cisScores;
+            charts.securityScores.data.datasets[1].data = awsScores;
+            charts.securityScores.update();
+        }
+
+        function updateOverallStatusChart() {
+            if (!charts.overallStatus) return;
+            
+            const poamOpen = dashboardData.poams.filter(p => p.status === 'Open').length;
+            const poamClosed = dashboardData.poams.filter(p => p.status === 'Closed').length;
+            const siaOpen = dashboardData.sias.filter(s => s.status === 'Open').length;
+            const siaClosed = dashboardData.sias.filter(s => s.status === 'Closed').length;
+            const kevOpen = dashboardData.kevs.filter(k => k.status === 'Open').length;
+            const kevClosed = dashboardData.kevs.filter(k => k.status === 'Closed').length;
+            
+            charts.overallStatus.data.datasets[0].data = [poamOpen, siaOpen, kevOpen];
+            charts.overallStatus.data.datasets[1].data = [poamClosed, siaClosed, kevClosed];
+            charts.overallStatus.update();
+        }
+
+        function updateControlsChart() {
+            if (!charts.controls) return;
+            
+            const totalPassed = dashboardData.securityScores.reduce((sum, s) => sum + s.controlsPassed, 0);
+            const totalFailed = dashboardData.securityScores.reduce((sum, s) => sum + s.controlsFailed, 0);
+            
+            charts.controls.data.datasets[0].data = [totalPassed, totalFailed];
+            charts.controls.update();
+        }
+
+        function updateTrendsChart() {
+            if (!charts.trends) return;
+            
+            // Simple trend visualization based on environment averages
+            const environments = dashboardData.securityScores.map(s => s.environment);
+            const avgScores = dashboardData.securityScores.map(s => (s.cisScore + s.awsScore) / 2);
+            
+            charts.trends.data.labels = environments;
+            charts.trends.data.datasets[0].data = avgScores;
+            charts.trends.update();
+        }
+
+        function refreshAllCharts() {
+            updateCharts();
+            showAlert('All charts refreshed!', 'success');
+        }
+
+        function downloadChartsAsPDF() {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('l', 'mm', 'a4'); // Landscape orientation
+            
+            const month = document.getElementById('reportMonth').value;
+            const year = document.getElementById('reportYear').value;
+            const organization = document.getElementById('organizationName').value;
+            
+            // Add title page
+            pdf.setFontSize(24);
+            pdf.setTextColor(66, 133, 244);
+            pdf.text('Security Dashboard Charts', 148, 30, { align: 'center' });
+            
+            pdf.setFontSize(16);
+            pdf.setTextColor(0, 0, 0);
+            pdf.text(`${organization}`, 148, 45, { align: 'center' });
+            pdf.text(`${month} ${year}`, 148, 55, { align: 'center' });
+            
+            // Add summary statistics
+            const openPoams = dashboardData.poams.filter(p => p.status === 'Open').length;
+            const openKevs = dashboardData.kevs.filter(k => k.status === 'Open').length;
+            const totalSias = dashboardData.sias.length;
+            const avgSecurityScore = dashboardData.securityScores.length > 0 ? 
+                Math.round(dashboardData.securityScores.reduce((sum, s) => sum + (s.cisScore + s.awsScore) / 2, 0) / dashboardData.securityScores.length) : 0;
+            
+            pdf.setFontSize(12);
+            pdf.text('Summary Statistics:', 20, 80);
+            pdf.text(`• Total POAMs (Open): ${openPoams}`, 20, 90);
+            pdf.text(`• Total SIAs: ${totalSias}`, 20, 100);
+            pdf.text(`• Total KEVs (Open): ${openKevs}`, 20, 110);
+            pdf.text(`• Average Security Score: ${avgSecurityScore}%`, 20, 120);
+            pdf.text(`• Environments Monitored: ${dashboardData.securityScores.length}`, 20, 130);
+            
+            // Function to add chart to PDF
+            const addChartToPDF = (chartId, title, x, y, width, height) => {
+                const canvas = document.getElementById(chartId);
+                if (canvas) {
+                    const imgData = canvas.toDataURL('image/png', 1.0);
+                    pdf.addImage(imgData, 'PNG', x, y, width, height);
+                    
+                    // Add title above chart
+                    pdf.setFontSize(10);
+                    pdf.setTextColor(0, 0, 0);
+                    pdf.text(title, x + width/2, y - 5, { align: 'center' });
+                }
+            };
+            
+            // Add new page for charts
+            pdf.addPage();
+            
+            // Page 2: POAM Charts
+            pdf.setFontSize(16);
+            pdf.setTextColor(66, 133, 244);
+            pdf.text('POAM Analysis', 148, 20, { align: 'center' });
+            
+            addChartToPDF('poamStatusChart', 'POAM Status Overview', 20, 30, 120, 80);
+            addChartToPDF('poamPriorityChart', 'POAM Priority Breakdown', 160, 30, 120, 80);
+            
+            // Page 3: KEV and Security Scores
+            pdf.addPage();
+            pdf.setFontSize(16);
+            pdf.setTextColor(66, 133, 244);
+            pdf.text('Vulnerability & Security Analysis', 148, 20, { align: 'center' });
+            
+            addChartToPDF('kevSeverityChart', 'KEV Severity Distribution', 20, 30, 120, 80);
+            addChartToPDF('securityScoresChart', 'Security Scores Comparison', 160, 30, 120, 80);
+            
+            // Page 4: Overall Status and Controls
+            pdf.addPage();
+            pdf.setFontSize(16);
+            pdf.setTextColor(66, 133, 244);
+            pdf.text('Overall Security Posture', 148, 20, { align: 'center' });
+            
+            addChartToPDF('overallStatusChart', 'Overall Security Status', 20, 30, 120, 80);
+            addChartToPDF('controlsChart', 'Controls Analysis', 160, 30, 120, 80);
+            
+            // Page 5: Trends
+            pdf.addPage();
+            pdf.setFontSize(16);
+            pdf.setTextColor(66, 133, 244);
+            pdf.text('Security Trends', 148, 20, { align: 'center' });
+            
+            addChartToPDF('trendsChart', 'Security Score Trends', 50, 30, 200, 120);
+            
+            // Add footer to each page
+            const pageCount = pdf.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                pdf.setPage(i);
+                pdf.setFontSize(8);
+                pdf.setTextColor(128, 128, 128);
+                pdf.text(`Generated on ${new Date().toLocaleDateString()} | Page ${i} of ${pageCount}`, 148, 200, { align: 'center' });
+            }
+            
+            // Save the PDF
+            pdf.save(`Security_Dashboard_Charts_${month}_${year}.pdf`);
+            showAlert('PDF downloaded successfully!', 'success');
+        }
+
+        function downloadChartImages() {
+            // This would require additional libraries for ZIP creation
+            // For now, provide instructions for manual download
+            alert(`To download individual chart images:
+            
+1. Right-click on any chart
+2. Select "Save image as..."
+3. Choose your preferred location
+4. Repeat for each chart
+
+This saves each chart as a high-quality PNG image that you can use in presentations or reports.`);
+        }
+
+        function downloadCharts() {
+            downloadChartImages();
+        }
+
+        function printCharts() {
+            window.print();
+        }
+
+        // Initialize charts when page loads
+        window.addEventListener('load', function() {
+            setTimeout(initializeCharts, 100);
+        });
+    </script>
+</body>
+</html>
