@@ -2,6 +2,8 @@
 
 Security Dashboard Data Entry & Export Tool I built that can take data input and export results in PDF format. This specific HTML code is focused on a work project but can be changed to incorporate several aspects of security.
 
+**This is still a bit manual. I get that, but it's better than a spreadsheet. I might look at extending this or adding more features to it in the future.**
+
 ![Screenshot](https://res.cloudinary.com/dcu6gtw2y/image/upload/v1748889217/Greenshot_2025-06-02_11.33.30_own1go.png)
 
 ## Features
