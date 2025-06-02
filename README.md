@@ -1,4 +1,4 @@
-# simple-compliance-dashboard
+# Simple Compliance Dashboard
 
 Security Dashboard Data Entry & Export Tool I built that can take data input and export results in PDF format. This specific HTML code is focused on a work project but can be changed to incorporate several aspects of security.
 
